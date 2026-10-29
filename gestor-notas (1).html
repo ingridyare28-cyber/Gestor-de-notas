@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestor de Notas Escolares</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --primary:#2563EB;--primary-light:#EFF6FF;--primary-dark:#1D4ED8;
+    --success:#16A34A;--success-light:#F0FDF4;
+    --danger:#DC2626;--danger-light:#FEF2F2;
+    --warning:#D97706;--warning-light:#FFFBEB;
+    --gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;
+    --gray-300:#D1D5DB;--gray-400:#9CA3AF;--gray-500:#6B7280;
+    --gray-600:#4B5563;--gray-700:#374151;--gray-800:#1F2937;--gray-900:#111827;
+    --saber:#7C3AED;--hacer:#0891B2;--ser:#059669;--bimestral:#D97706;
+    --font:'Inter',system-ui,sans-serif;
+    --radius:8px;--radius-lg:12px;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+    --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
+  }
+  body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min-height:100vh;font-size:14px}
+  
+  /* Layout */
+  .app{display:flex;flex-direction:column;min-height:100vh}
+  .topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .topbar-brand{font-size:1rem;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:.5rem}
+  .topbar-brand svg{width:22px;height:22px}
+  .main{display:flex;flex:1}
+  .sidebar{width:220px;background:#fff;border-right:1px solid var(--gray-200);padding:1rem 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;flex-shrink:0}
+  .content{flex:1;padding:1.5rem;overflow-x:hidden;max-width:100%}
+  
+  /* Nav */
+  .nav-section{padding:.5rem 1rem .25rem;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-400)}
+  .nav-item{display:flex;align-items:center;gap:.6rem;padding:.5rem 1rem;cursor:pointer;color:var(--gray-600);border-radius:0;transition:all .15s;font-size:.85rem;border-left:2px solid transparent;margin:1px 0}
+  .nav-item:hover{background:var(--gray-50);color:var(--gray-900)}
+  .nav-item.active{color:var(--primary);background:var(--primary-light);border-left-color:var(--primary);font-weight:500}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0}
+  
+  /* Views */
+  .view{display:none}
+  .view.active{display:block}
+  
+  /* Cards */
+  .card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:var(--shadow)}
+  .card-title{font-size:1rem;font-weight:600;color:var(--gray-800);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .card-title svg{width:18px;height:18px;color:var(--primary)}
+  
+  /* Grid */
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}
+  .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+  .grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem}
+  
+  /* Forms */
+  .form-group{margin-bottom:1rem}
+  .form-label{display:block;font-size:.8rem;font-weight:500;color:var(--gray-600);margin-bottom:.35rem}
+  .form-control{width:100%;padding:.5rem .75rem;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:.85rem;color:var(--gray-800);background:#fff;transition:border-color .15s,box-shadow .15s;font-family:inherit}
+  .form-control:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  select.form-control{cursor:pointer}
+  
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;border-radius:var(--radius);font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;font-family:inherit;line-height:1.4}
+  .btn svg{width:14px;height:14px}
+  .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn-primary:hover{background:var(--primary-dark)}
+  .btn-secondary{background:#fff;color:var(--gray-700);border-color:var(--gray-300)}
+  .btn-secondary:hover{background:var(--gray-50)}
+  .btn-danger{background:var(--danger-light);color:var(--danger);border-color:#FECACA}
+  .btn-danger:hover{background:#FEE2E2}
+  .btn-success{background:var(--success-light);color:var(--success);border-color:#BBF7D0}
+  .btn-success:hover{background:#DCFCE7}
+  .btn-sm{padding:.3rem .6rem;font-size:.75rem}
+  .btn-xs{padding:.2rem .45rem;font-size:.7rem}
+  
+  /* Tables */
+  .table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--gray-200)}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th{background:var(--gray-50);padding:.65rem .9rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--gray-500);border-bottom:1px solid var(--gray-200);white-space:nowrap}
+  td{padding:.65rem .9rem;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--gray-50)}
+  .th-center,td.center{text-align:center}
+  
+  /* Badges */
+  .badge{display:inline-flex;align-items:center;padding:.2rem .55rem;border-radius:100px;font-size:.72rem;font-weight:600;line-height:1}
+  .badge-success{background:var(--success-light);color:var(--success)}
+  .badge-danger{background:var(--danger-light);color:var(--danger)}
+  .badge-warning{background:var(--warning-light);color:var(--warning)}
+  .badge-primary{background:var(--primary-light);color:var(--primary)}
+  .badge-gray{background:var(--gray-100);color:var(--gray-600)}
+  
+  /* Notas badge por componente */
+  .badge-saber{background:#F3E8FF;color:#6D28D9}
+  .badge-hacer{background:#ECFEFF;color:#0E7490}
+  .badge-ser{background:#ECFDF5;color:#047857}
+  .badge-bimestral{background:#FFFBEB;color:#B45309}
+  
+  /* Stat cards */
+  .stat-card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:1rem;box-shadow:var(--shadow)}
+  .stat-label{font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:var(--gray-400);margin-bottom:.35rem}
+  .stat-value{font-size:1.6rem;font-weight:700;line-height:1.2}
+  .stat-sub{font-size:.75rem;color:var(--gray-400);margin-top:.25rem}
+  
+  /* Progress bar */
+  .progress{height:6px;background:var(--gray-200);border-radius:100px;overflow:hidden;margin-top:.4rem}
+  .progress-bar{height:100%;border-radius:100px;transition:width .3s}
+  
+  /* Modals */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:1rem}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:var(--radius-lg);padding:1.5rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-md)}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+  .modal-title{font-size:1rem;font-weight:600;color:var(--gray-800)}
+  .modal-footer{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--gray-200)}
+  
+  /* Tabs */
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--gray-200);margin-bottom:1.25rem;overflow-x:auto}
+  .tab{padding:.55rem 1rem;font-size:.82rem;font-weight:500;cursor:pointer;color:var(--gray-500);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .15s}
+  .tab:hover{color:var(--gray-800)}
+  .tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+  
+  /* Tags notas */
+  .nota-tags{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+  .nota-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;border-radius:6px;font-size:.75rem;font-weight:500}
+  .nota-tag-remove{cursor:pointer;opacity:.6;display:flex;align-items:center}
+  .nota-tag-remove:hover{opacity:1}
+  
+  /* Cálculo paso a paso */
+  .calc-box{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius);padding:.9rem;font-size:.8rem;margin-top:.5rem}
+  .calc-row{display:flex;justify-content:space-between;padding:.2rem 0;color:var(--gray-600)}
+  .calc-row.total{border-top:1px solid var(--gray-300);margin-top:.4rem;padding-top:.5rem;font-weight:600;color:var(--gray-800)}
+  .calc-formula{font-family:monospace;background:#fff;border:1px solid var(--gray-200);border-radius:4px;padding:.2rem .5rem;font-size:.75rem;color:var(--gray-700)}
+  
+  /* Periodo selector */
+  .periodo-tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap}
+  .periodo-btn{padding:.45rem .9rem;border-radius:var(--radius);font-size:.8rem;font-weight:500;cursor:pointer;border:1px solid var(--gray-300);background:#fff;color:var(--gray-600);transition:all .15s}
+  .periodo-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  
+  /* Porcentaje inputs */
+  .porc-group{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+  .porc-item{display:flex;flex-direction:column;gap:.25rem}
+  .porc-item label{font-size:.75rem;font-weight:500;color:var(--gray-600)}
+  .porc-item input{padding:.4rem .6rem;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:.85rem;font-family:inherit;text-align:center}
+  .porc-item input:focus{outline:none;border-color:var(--primary)}
+  .porc-total{text-align:center;padding:.5rem;border-radius:var(--radius);font-size:.82rem;font-weight:600;margin-top:.5rem}
+  .porc-total.ok{background:var(--success-light);color:var(--success)}
+  .porc-total.bad{background:var(--danger-light);color:var(--danger)}
+  
+  /* Color dots */
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+  
+  /* Empty state */
+  .empty{text-align:center;padding:3rem 1rem;color:var(--gray-400)}
+  .empty svg{width:40px;height:40px;margin:0 auto .75rem;display:block;opacity:.4}
+  .empty p{font-size:.85rem;margin-top:.35rem}
+  
+  /* Nota final color */
+  .nota-aprueba{color:var(--success);font-weight:700}
+  .nota-reprueba{color:var(--danger);font-weight:700}
+  .nota-riesgo{color:var(--warning);font-weight:700}
+  
+  /* Page header */
+  .page-header{margin-bottom:1.5rem}
+  .page-header h1{font-size:1.3rem;font-weight:700;color:var(--gray-900)}
+  .page-header p{font-size:.85rem;color:var(--gray-500);margin-top:.2rem}
+  .page-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+  
+  /* Chips */
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem}
+  .chip{padding:.25rem .65rem;background:var(--gray-100);border-radius:100px;font-size:.75rem;color:var(--gray-600);font-weight:500}
+  
+  /* Alert */
+  .alert{padding:.75rem 1rem;border-radius:var(--radius);font-size:.82rem;margin-bottom:1rem;border:1px solid}
+  .alert-info{background:var(--primary-light);color:#1E40AF;border-color:#BFDBFE}
+  .alert-warning{background:var(--warning-light);color:#92400E;border-color:#FDE68A}
+  
+  /* Responsive */
+  @media(max-width:768px){
+    .sidebar{display:none}
+    .main{flex-direction:column}
+    .content{padding:1rem}
+    .grid-4{grid-template-columns:repeat(2,1fr)}
+    .porc-group{grid-template-columns:repeat(2,1fr)}
+    .mobile-menu-btn{display:flex!important}
+  }
+  .mobile-menu-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--gray-200);border-radius:var(--radius);cursor:pointer;background:#fff}
+  .sidebar.mobile-open{display:block;position:fixed;inset:56px 0 0 0;z-index:150;overflow-y:auto;border-right:1px solid var(--gray-200)}
+  
+  /* Helper */
+  .flex{display:flex}.gap-1{gap:.5rem}.gap-2{gap:.75rem}.items-center{align-items:center}.justify-between{justify-content:space-between}.wrap{flex-wrap:wrap}
+  .mt-1{margin-top:.5rem}.mt-2{margin-top:.75rem}.mt-3{margin-top:1.25rem}.mb-1{margin-bottom:.5rem}.mb-2{margin-bottom:.75rem}
+  .text-sm{font-size:.8rem}.text-xs{font-size:.72rem}.text-muted{color:var(--gray-500)}.text-right{text-align:right}.font-mono{font-family:monospace}
+  .w-full{width:100%}
+  .input-nota{width:70px;padding:.3rem .5rem;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:.82rem;text-align:center;font-family:inherit}
+  .input-nota:focus{outline:none;border-color:var(--primary)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Gestor de Notas
+    </div>
+    <button class="mobile-menu-btn" id="menuBtn" onclick="toggleMobileMenu()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" onclick="showView('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Panel general
+      </div>
+      <div class="nav-item" onclick="showView('notas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Registrar notas
+      </div>
+      <div class="nav-section">Configuración</div>
+      <div class="nav-item" onclick="showView('estudiantes')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Estudiantes
+      </div>
+      <div class="nav-item" onclick="showView('materias')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        Materias
+      </div>
+    </div>
+    
+    <!-- Content -->
+    <div class="content">
+      
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div class="page-header-row page-header">
+          <div>
+            <h1>Panel general</h1>
+            <p>Resumen de estudiantes y resultados del año escolar</p>
+          </div>
+          <button class="btn btn-primary" onclick="showView('notas')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Registrar nota
+          </button>
+        </div>
+        <div class="grid-4 mb-2" id="dashStats"></div>
+        <div class="grid-2 mt-3">
+          <div class="card">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Resumen por estudiante
+            </div>
+            <div id="dashEstudiantes"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+              Materias registradas
+            </div>
+            <div id="dashMaterias"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- NOTAS -->
+      <div class="view" id="view-notas">
+        <div class="page-header-row page-header">
+          <div>
+            <h1>Registrar notas</h1>
+            <p>Selecciona estudiante y materia para gestionar calificaciones</p>
+          </div>
+        </div>
+        <div class="card mb-2">
+          <div class="grid-2">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Estudiante</label>
+              <select class="form-control" id="notaEstudiante" onchange="renderNotasView()">
+                <option value="">— Seleccionar —</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Materia</label>
+              <select class="form-control" id="notaMateria" onchange="renderNotasView()">
+                <option value="">— Seleccionar —</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div id="notasContent"></div>
+      </div>
+      
+      <!-- ESTUDIANTES -->
+      <div class="view" id="view-estudiantes">
+        <div class="page-header-row page-header">
+          <div>
+            <h1>Estudiantes</h1>
+            <p>Gestiona los estudiantes registrados</p>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modalEstudiante')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo estudiante
+          </button>
+        </div>
+        <div class="card">
+          <div id="tablaEstudiantes"></div>
+        </div>
+      </div>
+      
+      <!-- MATERIAS -->
+      <div class="view" id="view-materias">
+        <div class="page-header-row page-header">
+          <div>
+            <h1>Materias</h1>
+            <p>Gestiona materias y sus porcentajes de evaluación</p>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modalMateria')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva materia
+          </button>
+        </div>
+        <div class="card">
+          <div id="tablaMaterias"></div>
+        </div>
+      </div>
+      
+    </div><!-- end content -->
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<!-- MODAL: Estudiante -->
+<div class="modal-overlay" id="modalEstudiante">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalEstudianteTitle">Nuevo estudiante</span>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modalEstudiante')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre completo</label>
+      <input type="text" class="form-control" id="inputEstNombre" placeholder="Ej: Juan García">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Grado / Curso (opcional)</label>
+      <input type="text" class="form-control" id="inputEstGrado" placeholder="Ej: 8°A">
+    </div>
+    <input type="hidden" id="inputEstId">
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalEstudiante')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEstudiante()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Materia -->
+<div class="modal-overlay" id="modalMateria">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalMateriaTitle">Nueva materia</span>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modalMateria')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre de la materia</label>
+      <input type="text" class="form-control" id="inputMatNombre" placeholder="Ej: Matemáticas">
+    </div>
+    <div class="form-group mt-2">
+      <label class="form-label">Porcentajes por componente <span class="text-muted">(deben sumar 100%)</span></label>
+      <div class="porc-group">
+        <div class="porc-item">
+          <label style="color:var(--saber)">🔵 Saber</label>
+          <input type="number" id="porcSaber" min="0" max="100" value="35" oninput="updatePorcTotal()">
+        </div>
+        <div class="porc-item">
+          <label style="color:var(--hacer)">🔷 Hacer</label>
+          <input type="number" id="porcHacer" min="0" max="100" value="25" oninput="updatePorcTotal()">
+        </div>
+        <div class="porc-item">
+          <label style="color:var(--ser)">🟢 Ser</label>
+          <input type="number" id="porcSer" min="0" max="100" value="15" oninput="updatePorcTotal()">
+        </div>
+        <div class="porc-item">
+          <label style="color:var(--bimestral)">🟡 Bimestral</label>
+          <input type="number" id="porcBimestral" min="0" max="100" value="25" oninput="updatePorcTotal()">
+        </div>
+      </div>
+      <div class="porc-total ok" id="porcTotal">Total: 100% ✓</div>
+    </div>
+    <input type="hidden" id="inputMatId">
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalMateria')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMateria()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Agregar nota -->
+<div class="modal-overlay" id="modalNota">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Agregar nota</span>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modalNota')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Componente</label>
+      <select class="form-control" id="notaComponente">
+        <option value="saber">Saber</option>
+        <option value="hacer">Hacer</option>
+        <option value="ser">Ser</option>
+        <option value="bimestral">Bimestral</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nota (1.0 – 5.0)</label>
+      <input type="number" class="form-control" id="notaValor" min="1" max="5" step="0.1" placeholder="Ej: 4.5">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descripción (opcional)</label>
+      <input type="text" class="form-control" id="notaDesc" placeholder="Ej: Parcial 1">
+    </div>
+    <input type="hidden" id="notaPeriodo">
+    <input type="hidden" id="notaEstId">
+    <input type="hidden" id="notaMatId">
+    <input type="hidden" id="notaEditId">
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalNota')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarNota()">Guardar nota</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+let db = {
+  estudiantes: [],
+  materias: [],
+  notas: [] // {id, estId, matId, periodo, componente, valor, desc}
+};
+
+const COMPONENTES = ['saber','hacer','ser','bimestral'];
+const COMP_LABELS = {saber:'Saber',hacer:'Hacer',ser:'Ser',bimestral:'Bimestral'};
+const COMP_COLORS = {saber:'var(--saber)',hacer:'var(--hacer)',ser:'var(--ser)',bimestral:'var(--bimestral)'};
+const COMP_BADGES = {saber:'badge-saber',hacer:'badge-hacer',ser:'badge-ser',bimestral:'badge-bimestral'};
+const NOTA_MIN = 1.0, NOTA_MAX = 5.0, NOTA_APRUEBA = 3.0;
+
+// ===================== STORAGE =====================
+function save(){try{localStorage.setItem('gestor_notas_v2',JSON.stringify(db))}catch(e){}}
+function load(){
+  try{
+    const d=localStorage.getItem('gestor_notas_v2');
+    if(d){db=JSON.parse(d);}
+    // Migraciones / defaults
+    db.estudiantes=db.estudiantes||[];
+    db.materias=db.materias||[];
+    db.notas=db.notas||[];
+  }catch(e){db={estudiantes:[],materias:[],notas:[]}}
+}
+
+// ===================== IDs =====================
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+// ===================== CALC =====================
+function calcComponente(notas){
+  if(!notas||notas.length===0) return null;
+  const suma=notas.reduce((a,n)=>a+n.valor,0);
+  return suma/notas.length;
+}
+
+function calcDefinitiva(estId, matId, periodo){
+  const mat=db.materias.find(m=>m.id===matId);
+  if(!mat) return null;
+  const result={};
+  let definitiva=0;
+  let allHaveNotes=false;
+  for(const comp of COMPONENTES){
+    const ns=db.notas.filter(n=>n.estId===estId&&n.matId===matId&&n.periodo===periodo&&n.componente===comp);
+    const prom=calcComponente(ns);
+    const porc=(mat.porcentajes[comp]||0)/100;
+    result[comp]={notas:ns,promedio:prom,porcentaje:mat.porcentajes[comp],aporte:prom!==null?prom*porc:null};
+    if(prom!==null) allHaveNotes=true;
+  }
+  if(!allHaveNotes) return {componentes:result,definitiva:null};
+  // Solo calcular definitiva con los componentes que tienen notas, los demás 0
+  definitiva=COMPONENTES.reduce((a,comp)=>{
+    const c=result[comp];
+    return a+(c.aporte!==null?c.aporte:0);
+  },0);
+  return {componentes:result,definitiva:Math.max(NOTA_MIN,Math.min(NOTA_MAX,+definitiva.toFixed(2)))};
+}
+
+function calcAnual(estId, matId){
+  let sum=0,count=0;
+  for(let p=1;p<=4;p++){
+    const r=calcDefinitiva(estId,matId,p);
+    if(r&&r.definitiva!==null){sum+=r.definitiva;count++;}
+  }
+  if(count===0) return null;
+  return +(sum/count).toFixed(2);
+}
+
+function notaColor(nota){
+  if(nota===null||nota===undefined) return '';
+  if(nota>=NOTA_APRUEBA) return 'nota-aprueba';
+  if(nota>=2.5) return 'nota-riesgo';
+  return 'nota-reprueba';
+}
+
+function notaLabel(nota){
+  if(nota===null||nota===undefined) return '—';
+  return nota.toFixed(2);
+}
+
+// ===================== VIEWS =====================
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    if(el.getAttribute('onclick')&&el.getAttribute('onclick').includes("'"+v+"'")) el.classList.add('active');
+  });
+  closeMobileMenu();
+  if(v==='dashboard') renderDashboard();
+  if(v==='estudiantes') renderEstudiantes();
+  if(v==='materias') renderMaterias();
+  if(v==='notas') populateNotaSelects(), renderNotasView();
+}
+
+function toggleMobileMenu(){
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+}
+function closeMobileMenu(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+}
+
+// ===================== DASHBOARD =====================
+function renderDashboard(){
+  const totalEst=db.estudiantes.length;
+  const totalMat=db.materias.length;
+  const totalNotas=db.notas.length;
+  
+  let aprobados=0,reprobados=0;
+  db.estudiantes.forEach(est=>{
+    db.materias.forEach(mat=>{
+      const anual=calcAnual(est.id,mat.id);
+      if(anual!==null){
+        if(anual>=NOTA_APRUEBA) aprobados++; else reprobados++;
+      }
+    });
+  });
+  
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat-card">
+      <div class="stat-label">Estudiantes</div>
+      <div class="stat-value" style="color:var(--primary)">${totalEst}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Materias</div>
+      <div class="stat-value" style="color:var(--saber)">${totalMat}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Notas registradas</div>
+      <div class="stat-value" style="color:var(--hacer)">${totalNotas}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Promedio aprobación</div>
+      <div class="stat-value" style="color:var(--success)">${aprobados+reprobados>0?Math.round(aprobados/(aprobados+reprobados)*100):0}%</div>
+      <div class="stat-sub">${aprobados} aprueban · ${reprobados} reprueban</div>
+    </div>
+  `;
+  
+  // Tabla estudiantes
+  if(db.estudiantes.length===0){
+    document.getElementById('dashEstudiantes').innerHTML=emptyState('No hay estudiantes aún','Agrega estudiantes desde el menú Configuración');
+    document.getElementById('dashMaterias').innerHTML='';
+    return;
+  }
+  
+  let rowsEst='';
+  db.estudiantes.forEach(est=>{
+    let promEstArr=[];
+    db.materias.forEach(mat=>{
+      const a=calcAnual(est.id,mat.id);
+      if(a!==null) promEstArr.push(a);
+    });
+    const promEst=promEstArr.length?+(promEstArr.reduce((a,b)=>a+b,0)/promEstArr.length).toFixed(2):null;
+    const aprueba=promEst!==null&&promEst>=NOTA_APRUEBA;
+    rowsEst+=`<tr>
+      <td><span style="font-weight:500">${esc(est.nombre)}</span>${est.grado?`<br><span class="text-xs text-muted">${esc(est.grado)}</span>`:''}
+      <td class="center">${notaLabel(promEst)?`<span class="${notaColor(promEst)} font-mono">${notaLabel(promEst)}</span>`:''}</td>
+      <td class="center">${promEst!==null?`<span class="badge ${aprueba?'badge-success':'badge-danger'}">${aprueba?'Aprueba':'Reprueba'}</span>`:'<span class="badge badge-gray">Sin notas</span>'}</td>
+      <td class="center"><button class="btn btn-secondary btn-xs" onclick="goNotasEst('${est.id}')">Ver</button></td>
+    </tr>`;
+  });
+  document.getElementById('dashEstudiantes').innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Nombre</th><th class="th-center">Prom. anual</th><th class="th-center">Estado</th><th class="th-center">Notas</th></tr></thead>
+    <tbody>${rowsEst}</tbody>
+  </table></div>`;
+  
+  // Lista materias
+  if(db.materias.length===0){
+    document.getElementById('dashMaterias').innerHTML=emptyState('No hay materias aún','Agrega materias desde Configuración');
+    return;
+  }
+  let matList='';
+  db.materias.forEach(mat=>{
+    matList+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--gray-100)">
+      <span style="font-weight:500;font-size:.85rem">${esc(mat.nombre)}</span>
+      <div class="chips" style="gap:.3rem">
+        <span class="chip" style="background:#F3E8FF;color:var(--saber)">S:${mat.porcentajes.saber}%</span>
+        <span class="chip" style="background:#ECFEFF;color:var(--hacer)">H:${mat.porcentajes.hacer}%</span>
+        <span class="chip" style="background:#ECFDF5;color:var(--ser)">Ser:${mat.porcentajes.ser}%</span>
+        <span class="chip" style="background:#FFFBEB;color:var(--bimestral)">B:${mat.porcentajes.bimestral}%</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('dashMaterias').innerHTML=matList;
+}
+
+function goNotasEst(estId){
+  showView('notas');
+  const sel=document.getElementById('notaEstudiante');
+  sel.value=estId;
+  renderNotasView();
+}
+
+// ===================== ESTUDIANTES =====================
+function renderEstudiantes(){
+  if(db.estudiantes.length===0){
+    document.getElementById('tablaEstudiantes').innerHTML=emptyState('Sin estudiantes','Agrega el primer estudiante con el botón de arriba');
+    return;
+  }
+  let rows='';
+  db.estudiantes.forEach((est,i)=>{
+    rows+=`<tr>
+      <td><span style="font-weight:500">${esc(est.nombre)}</span></td>
+      <td>${esc(est.grado||'—')}</td>
+      <td class="center">${db.notas.filter(n=>n.estId===est.id).length}</td>
+      <td>
+        <div class="flex gap-1">
+          <button class="btn btn-secondary btn-xs" onclick="editEstudiante('${est.id}')">Editar</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteEstudiante('${est.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('tablaEstudiantes').innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Nombre</th><th>Grado</th><th class="th-center">Notas</th><th>Acciones</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+function guardarEstudiante(){
+  const nombre=document.getElementById('inputEstNombre').value.trim();
+  const grado=document.getElementById('inputEstGrado').value.trim();
+  const id=document.getElementById('inputEstId').value;
+  if(!nombre){alert('El nombre es obligatorio');return;}
+  if(id){
+    const est=db.estudiantes.find(e=>e.id===id);
+    if(est){est.nombre=nombre;est.grado=grado;}
+  } else {
+    db.estudiantes.push({id:uid(),nombre,grado});
+  }
+  save();closeModal('modalEstudiante');
+  document.getElementById('inputEstNombre').value='';
+  document.getElementById('inputEstGrado').value='';
+  document.getElementById('inputEstId').value='';
+  renderEstudiantes();renderDashboard();populateNotaSelects();
+}
+
+function editEstudiante(id){
+  const est=db.estudiantes.find(e=>e.id===id);
+  if(!est) return;
+  document.getElementById('modalEstudianteTitle').textContent='Editar estudiante';
+  document.getElementById('inputEstNombre').value=est.nombre;
+  document.getElementById('inputEstGrado').value=est.grado||'';
+  document.getElementById('inputEstId').value=est.id;
+  openModal('modalEstudiante');
+}
+
+function deleteEstudiante(id){
+  if(!confirm('¿Eliminar estudiante y todas sus notas?')) return;
+  db.estudiantes=db.estudiantes.filter(e=>e.id!==id);
+  db.notas=db.notas.filter(n=>n.estId!==id);
+  save();renderEstudiantes();renderDashboard();populateNotaSelects();
+}
+
+// ===================== MATERIAS =====================
+function updatePorcTotal(){
+  const s=+document.getElementById('porcSaber').value||0;
+  const h=+document.getElementById('porcHacer').value||0;
+  const se=+document.getElementById('porcSer').value||0;
+  const b=+document.getElementById('porcBimestral').value||0;
+  const t=s+h+se+b;
+  const el=document.getElementById('porcTotal');
+  el.textContent=`Total: ${t}% ${t===100?'✓':'— debe ser 100%'}`;
+  el.className=`porc-total ${t===100?'ok':'bad'}`;
+}
+
+function guardarMateria(){
+  const nombre=document.getElementById('inputMatNombre').value.trim();
+  const s=+document.getElementById('porcSaber').value||0;
+  const h=+document.getElementById('porcHacer').value||0;
+  const se=+document.getElementById('porcSer').value||0;
+  const b=+document.getElementById('porcBimestral').value||0;
+  const id=document.getElementById('inputMatId').value;
+  if(!nombre){alert('El nombre es obligatorio');return;}
+  if(s+h+se+b!==100){alert('Los porcentajes deben sumar exactamente 100%');return;}
+  const porcentajes={saber:s,hacer:h,ser:se,bimestral:b};
+  if(id){
+    const mat=db.materias.find(m=>m.id===id);
+    if(mat){mat.nombre=nombre;mat.porcentajes=porcentajes;}
+  } else {
+    db.materias.push({id:uid(),nombre,porcentajes});
+  }
+  save();closeModal('modalMateria');resetMatModal();
+  renderMaterias();renderDashboard();populateNotaSelects();
+}
+
+function resetMatModal(){
+  document.getElementById('inputMatNombre').value='';
+  document.getElementById('inputMatId').value='';
+  document.getElementById('porcSaber').value=35;
+  document.getElementById('porcHacer').value=25;
+  document.getElementById('porcSer').value=15;
+  document.getElementById('porcBimestral').value=25;
+  updatePorcTotal();
+}
+
+function editMateria(id){
+  const mat=db.materias.find(m=>m.id===id);
+  if(!mat) return;
+  document.getElementById('modalMateriaTitle').textContent='Editar materia';
+  document.getElementById('inputMatNombre').value=mat.nombre;
+  document.getElementById('inputMatId').value=mat.id;
+  document.getElementById('porcSaber').value=mat.porcentajes.saber;
+  document.getElementById('porcHacer').value=mat.porcentajes.hacer;
+  document.getElementById('porcSer').value=mat.porcentajes.ser;
+  document.getElementById('porcBimestral').value=mat.porcentajes.bimestral;
+  updatePorcTotal();
+  openModal('modalMateria');
+}
+
+function deleteMateria(id){
+  if(!confirm('¿Eliminar materia y todas las notas asociadas?')) return;
+  db.materias=db.materias.filter(m=>m.id!==id);
+  db.notas=db.notas.filter(n=>n.matId!==id);
+  save();renderMaterias();renderDashboard();populateNotaSelects();
+}
+
+function renderMaterias(){
+  if(db.materias.length===0){
+    document.getElementById('tablaMaterias').innerHTML=emptyState('Sin materias','Agrega la primera materia con el botón de arriba');
+    return;
+  }
+  let rows='';
+  db.materias.forEach(mat=>{
+    rows+=`<tr>
+      <td style="font-weight:500">${esc(mat.nombre)}</td>
+      <td><span class="badge badge-saber">S: ${mat.porcentajes.saber}%</span></td>
+      <td><span class="badge badge-hacer">H: ${mat.porcentajes.hacer}%</span></td>
+      <td><span class="badge badge-ser">Ser: ${mat.porcentajes.ser}%</span></td>
+      <td><span class="badge badge-bimestral">B: ${mat.porcentajes.bimestral}%</span></td>
+      <td>
+        <div class="flex gap-1">
+          <button class="btn btn-secondary btn-xs" onclick="editMateria('${mat.id}')">Editar</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteMateria('${mat.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('tablaMaterias').innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Materia</th><th>Saber</th><th>Hacer</th><th>Ser</th><th>Bimestral</th><th>Acciones</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// ===================== NOTAS =====================
+function populateNotaSelects(){
+  const selEst=document.getElementById('notaEstudiante');
+  const selMat=document.getElementById('notaMateria');
+  const curEst=selEst.value, curMat=selMat.value;
+  selEst.innerHTML='<option value="">— Seleccionar —</option>'+db.estudiantes.map(e=>`<option value="${e.id}">${esc(e.nombre)}${e.grado?' ('+esc(e.grado)+')':''}</option>`).join('');
+  selMat.innerHTML='<option value="">— Seleccionar —</option>'+db.materias.map(m=>`<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+  if(curEst) selEst.value=curEst;
+  if(curMat) selMat.value=curMat;
+}
+
+let currentPeriodo=1;
+
+function renderNotasView(){
+  const estId=document.getElementById('notaEstudiante').value;
+  const matId=document.getElementById('notaMateria').value;
+  const container=document.getElementById('notasContent');
+  
+  if(db.estudiantes.length===0||db.materias.length===0){
+    container.innerHTML=`<div class="card">${emptyState('Primero configura estudiantes y materias','Ve a Configuración → Estudiantes y Materias')}</div>`;
+    return;
+  }
+  if(!estId||!matId){
+    container.innerHTML=`<div class="card">${emptyState('Selecciona un estudiante y una materia','Usa los selectores de arriba para comenzar')}</div>`;
+    return;
+  }
+  
+  const est=db.estudiantes.find(e=>e.id===estId);
+  const mat=db.materias.find(m=>m.id===matId);
+  if(!est||!mat) return;
+  
+  // Periodos tabs
+  let tabsHTML=`<div class="periodo-tabs">`;
+  for(let p=1;p<=4;p++){
+    tabsHTML+=`<button class="periodo-btn ${currentPeriodo===p?'active':''}" onclick="currentPeriodo=${p};renderNotasView()">Período ${p}</button>`;
+  }
+  tabsHTML+=`<button class="periodo-btn ${currentPeriodo===5?'active':''}" onclick="currentPeriodo=5;renderNotasView()">Resumen anual</button>`;
+  tabsHTML+=`</div>`;
+  
+  if(currentPeriodo===5){
+    container.innerHTML=tabsHTML+renderResumenAnual(est,mat);
+    return;
+  }
+  
+  const calc=calcDefinitiva(estId,matId,currentPeriodo);
+  let html=tabsHTML;
+  
+  // Componentes
+  html+=`<div class="grid-2">`;
+  COMPONENTES.forEach(comp=>{
+    const c=calc.componentes[comp];
+    const promStr=c.promedio!==null?c.promedio.toFixed(2):'—';
+    const aporteStr=c.aporte!==null?c.aporte.toFixed(3):'—';
+    html+=`<div class="card">
+      <div class="card-title" style="color:${COMP_COLORS[comp]};font-size:.9rem;margin-bottom:.75rem">
+        ${COMP_LABELS[comp]}
+        <span class="badge ${COMP_BADGES[comp]}" style="margin-left:auto">${mat.porcentajes[comp]}%</span>
+      </div>
+      <div class="nota-tags mb-1" id="tags-${comp}">
+        ${renderNotaTags(c.notas,comp)}
+      </div>
+      <div class="flex gap-1 mt-1 items-center">
+        <input type="number" class="input-nota" id="val-${comp}" min="1" max="5" step="0.1" placeholder="1.0-5.0" onkeydown="if(event.key==='Enter')addNotaDirecta('${estId}','${matId}',${currentPeriodo},'${comp}')">
+        <input type="text" class="form-control" id="desc-${comp}" placeholder="Descripción (opcional)" style="font-size:.78rem;padding:.3rem .5rem;flex:1" onkeydown="if(event.key==='Enter')addNotaDirecta('${estId}','${matId}',${currentPeriodo},'${comp}')">
+        <button class="btn btn-primary btn-sm" onclick="addNotaDirecta('${estId}','${matId}',${currentPeriodo},'${comp}')">+ Agregar</button>
+      </div>
+      ${c.notas.length>0?`<div class="calc-box mt-2">
+        <div class="calc-row"><span>Notas:</span><span class="font-mono">${c.notas.map(n=>n.valor.toFixed(1)).join(' + ')}</span></div>
+        <div class="calc-row"><span>Promedio:</span><span class="font-mono"><strong>${promStr}</strong></span></div>
+        <div class="calc-row"><span>Aporte (${mat.porcentajes[comp]}%):</span><span class="font-mono">${promStr} × ${(mat.porcentajes[comp]/100).toFixed(2)} = <strong>${aporteStr}</strong></span></div>
+      </div>`:''}
+    </div>`;
+  });
+  html+=`</div>`;
+  
+  // Definitiva del periodo
+  if(calc.definitiva!==null){
+    const aprueba=calc.definitiva>=NOTA_APRUEBA;
+    html+=`<div class="card mt-3" style="border:2px solid ${aprueba?'var(--success)':'var(--danger)'}">
+      <div class="card-title">Definitiva período ${currentPeriodo}</div>
+      <div class="calc-box">
+        <div style="font-size:.78rem;color:var(--gray-500);margin-bottom:.5rem">Cálculo detallado:</div>
+        ${COMPONENTES.map(comp=>{
+          const c=calc.componentes[comp];
+          if(c.aporte===null) return `<div class="calc-row"><span style="color:${COMP_COLORS[comp]}">${COMP_LABELS[comp]} (${mat.porcentajes[comp]}%)</span><span class="font-mono text-muted">sin notas → 0</span></div>`;
+          return `<div class="calc-row"><span style="color:${COMP_COLORS[comp]}">${COMP_LABELS[comp]} (${mat.porcentajes[comp]}%)</span><span class="font-mono">${c.promedio.toFixed(2)} × ${(mat.porcentajes[comp]/100).toFixed(2)} = ${c.aporte.toFixed(3)}</span></div>`;
+        }).join('')}
+        <div class="calc-row total">
+          <span>Definitiva</span>
+          <span class="font-mono" style="font-size:1.1rem;color:${aprueba?'var(--success)':'var(--danger)'}">${calc.definitiva.toFixed(2)} — ${aprueba?'✓ Aprueba':'✗ Reprueba'}</span>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    html+=`<div class="alert alert-info mt-3">Agrega notas en los componentes para calcular la definitiva del período.</div>`;
+  }
+  
+  container.innerHTML=html;
+}
+
+function renderNotaTags(notas, comp){
+  if(!notas||notas.length===0) return `<span class="text-xs text-muted">Sin notas aún</span>`;
+  return notas.map(n=>`
+    <span class="nota-tag ${COMP_BADGES[comp]}" style="background:${comp==='saber'?'#F3E8FF':comp==='hacer'?'#ECFEFF':comp==='ser'?'#ECFDF5':'#FFFBEB'}">
+      <span title="${esc(n.desc||'')}">${n.valor.toFixed(1)}${n.desc?' · '+esc(n.desc.substring(0,12)):''}</span>
+      <span class="nota-tag-remove" onclick="deleteNota('${n.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </span>
+    </span>
+  `).join('');
+}
+
+function addNotaDirecta(estId, matId, periodo, comp){
+  const valEl=document.getElementById('val-'+comp);
+  const descEl=document.getElementById('desc-'+comp);
+  const val=parseFloat(valEl.value);
+  if(isNaN(val)||val<NOTA_MIN||val>NOTA_MAX){
+    valEl.style.borderColor='var(--danger)';
+    setTimeout(()=>valEl.style.borderColor='',1500);
+    return;
+  }
+  db.notas.push({id:uid(),estId,matId,periodo,componente:comp,valor:+val.toFixed(2),desc:descEl.value.trim()});
+  save();
+  valEl.value='';descEl.value='';
+  renderNotasView();
+}
+
+function deleteNota(id){
+  db.notas=db.notas.filter(n=>n.id!==id);
+  save();renderNotasView();
+}
+
+function guardarNota(){
+  const val=parseFloat(document.getElementById('notaValor').value);
+  const comp=document.getElementById('notaComponente').value;
+  const desc=document.getElementById('notaDesc').value.trim();
+  const periodo=+document.getElementById('notaPeriodo').value;
+  const estId=document.getElementById('notaEstId').value;
+  const matId=document.getElementById('notaMatId').value;
+  const editId=document.getElementById('notaEditId').value;
+  if(isNaN(val)||val<NOTA_MIN||val>NOTA_MAX){alert('La nota debe estar entre 1.0 y 5.0');return;}
+  if(editId){
+    const n=db.notas.find(x=>x.id===editId);
+    if(n){n.valor=+val.toFixed(2);n.desc=desc;n.componente=comp;}
+  } else {
+    db.notas.push({id:uid(),estId,matId,periodo,componente:comp,valor:+val.toFixed(2),desc});
+  }
+  save();closeModal('modalNota');renderNotasView();
+}
+
+// ===================== RESUMEN ANUAL =====================
+function renderResumenAnual(est, mat){
+  let html=`<div class="card">
+    <div class="card-title">Resumen anual — ${esc(est.nombre)} · ${esc(mat.nombre)}</div>
+    <div class="table-wrap mb-3"><table>
+      <thead><tr>
+        <th>Período</th>
+        <th class="th-center" style="color:var(--saber)">Saber</th>
+        <th class="th-center" style="color:var(--hacer)">Hacer</th>
+        <th class="th-center" style="color:var(--ser)">Ser</th>
+        <th class="th-center" style="color:var(--bimestral)">Bimestral</th>
+        <th class="th-center">Definitiva</th>
+        <th class="th-center">Estado</th>
+      </tr></thead>
+      <tbody>`;
+  
+  let defArray=[];
+  for(let p=1;p<=4;p++){
+    const calc=calcDefinitiva(est.id,mat.id,p);
+    const def=calc.definitiva;
+    if(def!==null) defArray.push(def);
+    html+=`<tr>
+      <td style="font-weight:500">Período ${p}</td>
+      ${COMPONENTES.map(comp=>{
+        const prom=calc.componentes[comp].promedio;
+        return `<td class="center font-mono">${prom!==null?`<span class="${notaColor(prom)}">${prom.toFixed(2)}</span>`:'—'}</td>`;
+      }).join('')}
+      <td class="center"><span class="font-mono ${notaColor(def)}" style="font-size:.9rem;font-weight:600">${def!==null?def.toFixed(2):'—'}</span></td>
+      <td class="center">${def!==null?`<span class="badge ${def>=NOTA_APRUEBA?'badge-success':'badge-danger'}">${def>=NOTA_APRUEBA?'Aprueba':'Reprueba'}</span>`:'<span class="badge badge-gray">Pendiente</span>'}</td>
+    </tr>`;
+  }
+  
+  const anual=defArray.length?+(defArray.reduce((a,b)=>a+b,0)/defArray.length).toFixed(2):null;
+  html+=`</tbody></table></div>`;
+  
+  if(anual!==null){
+    const aprueba=anual>=NOTA_APRUEBA;
+    html+=`<div class="calc-box">
+      <div style="font-size:.78rem;color:var(--gray-500);margin-bottom:.4rem">Cálculo nota final anual:</div>
+      <div class="calc-row"><span>Definitivas de períodos:</span><span class="font-mono">${defArray.map(d=>d.toFixed(2)).join(' + ')}</span></div>
+      <div class="calc-row"><span>Suma:</span><span class="font-mono">${defArray.reduce((a,b)=>a+b,0).toFixed(2)}</span></div>
+      <div class="calc-row"><span>Cantidad de períodos:</span><span class="font-mono">${defArray.length}</span></div>
+      <div class="calc-row total">
+        <span>Nota anual final</span>
+        <span class="font-mono" style="font-size:1.15rem;color:${aprueba?'var(--success)':'var(--danger)'}">
+          ${anual.toFixed(2)} — ${aprueba?'✓ APRUEBA LA MATERIA':'✗ REPRUEBA LA MATERIA'}
+        </span>
+      </div>
+    </div>`;
+  } else {
+    html+=`<div class="alert alert-info">Completa al menos un período para ver el promedio anual.</div>`;
+  }
+  
+  html+=`</div>`;
+  return html;
+}
+
+// ===================== UTILS =====================
+function esc(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function emptyState(title,sub){
+  return `<div class="empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <strong style="font-size:.88rem;color:var(--gray-500)">${title}</strong>
+    <p>${sub}</p>
+  </div>`;
+}
+
+// ===================== INIT =====================
+load();
+populateNotaSelects();
+renderDashboard();
+renderEstudiantes();
+renderMaterias();
+updatePorcTotal();
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')});
+});
+</script>
+</body>
+</html>
